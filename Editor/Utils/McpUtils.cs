@@ -68,46 +68,7 @@ namespace McpUnity.Utils
         /// </summary>
         public static string GetServerPath()
         {
-            // First, try to find the package info via Package Manager
-            var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssetPath($"Packages/{McpUnitySettings.PackageName}");
-                
-            if (packageInfo != null && !string.IsNullOrEmpty(packageInfo.resolvedPath))
-            {
-                string serverPath = Path.Combine(packageInfo.resolvedPath, "Server~");
-
-                return CleanPathPrefix(serverPath);
-            }
-            
-            var assets = AssetDatabase.FindAssets("tsconfig");
-
-            if(assets.Length == 1)
-            {
-                // Convert relative path to absolute path
-                var relativePath = AssetDatabase.GUIDToAssetPath(assets[0]);
-                string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", relativePath));
-
-                return CleanPathPrefix(fullPath);
-            }
-            if (assets.Length > 0)
-            {
-                foreach (var assetJson in assets)
-                {
-                    string relativePath = AssetDatabase.GUIDToAssetPath(assetJson);
-                    string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", relativePath));
-
-                    if(Path.GetFileName(Path.GetDirectoryName(fullPath)) == "Server~")
-                    {
-                        return CleanPathPrefix(Path.GetDirectoryName(fullPath));
-                    }
-                }
-            }
-            
-            // If we get here, we couldn't find the server path
-            var errorString = "[MCP Unity] Could not locate Server directory. Please check the installation of the MCP Unity package.";
-
-            Debug.LogError(errorString);
-
-            return errorString;
+            return CleanPathPrefix(Path.Combine(Application.dataPath, "Plugins/com.gamelovers.mcp-unity/Server~"));
         }
 
         /// <summary>
