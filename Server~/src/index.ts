@@ -113,9 +113,21 @@ process.on('SIGINT', async () => {
 });
 
 // Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  serverLogger.error('Uncaught exception', error);
+process.on('uncaughtException', (error: any) => {
+    // Do not report EPIPE errors, since the logger might be broken
+    if (error.code === 'EPIPE') {
+        return;
+    }
+    
+    serverLogger.error('[Server] Uncaught exception', {
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        errno: error.errno,
+        syscall: error.syscall,
+    });
 });
+
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason) => {
