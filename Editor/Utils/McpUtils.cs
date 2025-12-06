@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 using McpUnity.Unity;
 using UnityEngine;
 using UnityEditor;
@@ -68,7 +69,8 @@ namespace McpUnity.Utils
         /// </summary>
         public static string GetServerPath()
         {
-            return CleanPathPrefix(Path.Combine(Application.dataPath, "Plugins/com.gamelovers.mcp-unity/Server~"));
+            var mcpPath = Directory.EnumerateDirectories(Application.dataPath, "com.gamelovers.mcp-unity", SearchOption.AllDirectories).FirstOrDefault();
+            return mcpPath == null ? throw new Exception("MCP Unity server not found. Please make sure MCP Unity is installed.") : CleanPathPrefix(Path.Combine(mcpPath, "Server~"));
         }
 
         /// <summary>
