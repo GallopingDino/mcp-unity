@@ -17,6 +17,7 @@ import { registerCreatePrefabTool } from './tools/createPrefabTool.js';
 import { registerDeleteSceneTool } from './tools/deleteSceneTool.js';
 import { registerLoadSceneTool } from './tools/loadSceneTool.js';
 import { registerRecompileScriptsTool } from './tools/recompileScriptsTool.js';
+import { registerGetGameObjectTool } from './tools/getGameObjectTool.js';
 import { registerGetMenuItemsResource } from './resources/getMenuItemResource.js';
 import { registerGetConsoleLogsResource } from './resources/getConsoleLogsResource.js';
 import { registerGetHierarchyResource } from './resources/getScenesHierarchyResource.js';
@@ -65,6 +66,7 @@ registerCreateSceneTool(server, mcpUnity, toolLogger);
 registerDeleteSceneTool(server, mcpUnity, toolLogger);
 registerLoadSceneTool(server, mcpUnity, toolLogger);
 registerRecompileScriptsTool(server, mcpUnity, toolLogger);
+registerGetGameObjectTool(server, mcpUnity, toolLogger);
 
 // Register all resources into the MCP server
 registerGetTestsResource(server, mcpUnity, resourceLogger);
@@ -102,34 +104,48 @@ async function startServer() {
   }
 }
 
+// Graceful shutdown handler
+let isShuttingDown = false;
+async function shutdown() {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  try {
+    serverLogger.info('Shutting down...');
+    await mcpUnity.stop();
+    await server.close();
+  } catch (error) {
+    // Ignore errors during shutdown
+  }
+  process.exit(0);
+}
+
 // Start the server
 startServer();
 
-// Handle shutdown
-process.on('SIGINT', async () => {
-  serverLogger.info('Shutting down...');
-  await mcpUnity.stop();
-  process.exit(0);
-});
+// Handle shutdown signals
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+process.on('SIGHUP', shutdown);
 
-// Handle uncaught exceptions
-process.on('uncaughtException', (error: any) => {
-    // Do not report EPIPE errors, since the logger might be broken
-    if (error.code === 'EPIPE') {
-        return;
-    }
-    
-    serverLogger.error('[Server] Uncaught exception', {
-        message: error.message,
-        stack: error.stack,
-        code: error.code,
-        errno: error.errno,
-        syscall: error.syscall,
-    });
-});
+// Handle stdin close (when MCP client disconnects)
+process.stdin.on('close', shutdown);
+process.stdin.on('end', shutdown);
+process.stdin.on('error', shutdown);
 
+// Handle uncaught exceptions - exit cleanly if it's just a closed pipe
+process.on('uncaughtException', (error: NodeJS.ErrnoException) => {
+  // EPIPE/EOF errors are expected when the MCP client disconnects
+  if (error.code === 'EPIPE' || error.code === 'EOF' || error.code === 'ERR_USE_AFTER_CLOSE') {
+    shutdown();
+    return;
+  }
+  serverLogger.error('Uncaught exception', error);
+  process.exit(1);
+});
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason) => {
   serverLogger.error('Unhandled rejection', reason);
+  process.exit(1);
 });

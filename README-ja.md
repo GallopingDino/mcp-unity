@@ -43,10 +43,6 @@
 
 MCP Unityは、Unityエディター向けのModel Context Protocolの実装であり、AIアシスタントがUnityプロジェクトと対話できるようにします。このパッケージは、UnityとMCPプロトコルを実装するNode.jsサーバー間のブリッジを提供し、Claude、Windsurf、CursorなどのAIエージェントがUnityエディター内で操作を実行できるようにします。
 
-<a href="https://glama.ai/mcp/servers/@CoderGamester/mcp-unity">
-  <img width="400" height="200" src="https://glama.ai/mcp/servers/@CoderGamester/mcp-unity/badge" alt="Unity MCPサーバー" />
-</a>
-
 ## 機能
 
 ### IDE統合 - パッケージキャッシュアクセス
@@ -113,7 +109,7 @@ MCP Unityは、Unityの`Library/PackedCache`フォルダーをワークスペー
   > **例:** "プロジェクトで利用可能なすべてのテストをリスト"
 
 ## 要件
-- Unity 2022.3以降 - [サーバーをインストール](#install-server)するため
+- Unity 6以降 - [サーバーをインストール](#install-server)するため
 - Node.js 18以降 - [サーバーを起動](#start-server)するため
 - npm 9以降 - [サーバーをデバッグ](#debug-server)するため
 

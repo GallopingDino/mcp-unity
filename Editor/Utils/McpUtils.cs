@@ -124,6 +124,15 @@ namespace McpUnity.Utils
         }
 
         /// <summary>
+        /// Adds the MCP configuration to the Google Antigravity config file
+        /// </summary>
+        public static bool AddToAntigravityConfig(bool useTabsIndentation)
+        {
+            string configFilePath = GetAntigravityConfigPath();
+            return AddToConfigFile(configFilePath, useTabsIndentation, "Google Antigravity");
+        }
+
+        /// <summary>
         /// Adds the MCP configuration to the GitHub Copilot config file
         /// </summary>
         public static bool AddToGitHubCopilotConfig(bool useTabsIndentation)
@@ -303,6 +312,37 @@ namespace McpUnity.Utils
         }
 
         /// <summary>
+        /// Gets the path to the Google Antigravity MCP config file based on the current OS
+        /// </summary>
+        /// <returns>The path to the Google Antigravity MCP config file</returns>
+        private static string GetAntigravityConfigPath()
+        {
+            // Base path depends on the OS
+            string basePath;
+
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+            {
+                // Windows: %USERPROFILE%/.gemini/antigravity/mcp_config.json
+                basePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".gemini", "antigravity");
+            }
+            else if (Application.platform == RuntimePlatform.OSXEditor)
+            {
+                // macOS: ~/Library/Application Support/.gemini/antigravity/mcp_config.json
+                string homeDir = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+                basePath = Path.Combine(homeDir, "Library", "Application Support", ".gemini", "antigravity");
+            }
+            else
+            {
+                // Unsupported platform
+                Debug.LogError("Unsupported platform for Google Antigravity MCP config");
+                return null;
+            }
+
+            // Return the path to the mcp_config.json file
+            return Path.Combine(basePath, "mcp_config.json");
+        }
+
+        /// <summary>
         /// Gets the path to the GitHub Copilot config file (workspace .vscode/mcp.json)
         /// </summary>
         /// <returns>The path to the GitHub Copilot config file</returns>
@@ -349,13 +389,23 @@ namespace McpUnity.Utils
             }
             else // macOS / Linux
             {
-                // Fallback to /bin/bash to find 'npm' in PATH
-                startInfo.FileName = "/bin/bash";
-                startInfo.Arguments = $"-c \"npm {arguments}\"";
+                string userShell = Environment.GetEnvironmentVariable("SHELL") ?? "/bin/bash";
+                string shellName = Path.GetFileName(userShell);
+                
+                // Source rc file to init version managers (nvm, fnm, volta) - GUI apps don't inherit shell env
+                string rcFile = shellName == "zsh" ? ".zshrc" : ".bashrc";
+                
+                startInfo.FileName = userShell;
+                startInfo.Arguments = $"-c \"source ~/{rcFile} 2>/dev/null || true; npm {arguments}\"";
 
-                // Ensure PATH includes common npm locations and current PATH
+                // Fallback PATH for common npm locations
                 string currentPath = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-                string extraPaths = "/usr/local/bin:/opt/homebrew/bin";
+                string homeDir = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+                string extraPaths = string.Join(":",
+                    "/usr/local/bin",
+                    "/opt/homebrew/bin",
+                    $"{homeDir}/.nvm/versions/node/default/bin"  // nvm default alias
+                );
                 startInfo.EnvironmentVariables["PATH"] = $"{extraPaths}:{currentPath}";
             }
 
